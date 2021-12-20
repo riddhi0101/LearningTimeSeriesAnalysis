@@ -1,0 +1,108 @@
+---
+title: "Project 1"
+author: "Riddhi"
+date: "10/17/2021"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## (a) Plot the data and elaborate on the general pattern of the data.
+
+```{r}
+setwd("/Users/riddhib/Desktop/Fall2021/STA137/Project1")
+Xt = read.csv("Project_1_Data.csv", header = FALSE)
+ts.plot(Xt, main="Average Monthly Temperature from January 1964 to December 1975", 
+        ylab= "Temperature")
+```
+
+
+## (b) Fit the regression model: seasonal month component plus noise
+
+```{r}
+Xt = ts(Xt, start=1964, frequency=12)
+Q = factor(cycle(Xt))
+reg = lm(Xt ~ 0  + Q, na.action = NULL)
+summary(reg)
+```
+(i)  If the model is correct, determine if the average temperature increase or decrease from month to month? Determine this from January to December.
+```{r}
+sumDiffs = 0
+for (i in (1:length(reg$coefficients)-1)){
+        toadd = (reg$coefficients[i] - reg$coefficients[i+1])
+        #print(toadd)
+        sumDiffs = sumDiffs + toadd
+}
+avg = sumDiffs/length(reg$coefficients)
+
+```
+
+(ii)
+```{r}
+plot.ts(cbind(Xt,reg$fitted.values),plot.type = 'single',
+        col=c('red',1),
+        ylab='Temperature',
+        lwd=c(1.5,1.5)) 
+legend('bottomright',legend = c('Xt','regression by month'),
+       col=c('red',1),
+       lty=c(1,1), lwd=c(2,2))
+```
+
+```{r}
+par(mfrow=c(1,2))
+plot(Xt-fitted(reg), main="plot of residuals")
+acf(Xt-fitted(reg))
+```
+The model appears to fit the data well because the residuals look white centered around 0. The acf of the residuals also looks like that of a white noise process because the acf of lag not equal to 0 is within the confidence levels, there fore not significant. The acf at lag 0 is 1 as expected in a white noise process.
+
+## c
+```{r}
+t = 1:length(Xt)
+B11 = cos(2*pi*t/12)
+B21 = cos(4*pi*t/12)
+B31 = cos(6*pi*t/12)
+B41 = cos(8*pi*t/12)
+B51 = cos(10*pi*t/12)
+B61 = cos(12*pi*t/12)
+
+B12 = sin(2*pi*t/12)
+B22 = sin(4*pi*t/12)
+B32 = sin(6*pi*t/12)
+B42 = sin(8*pi*t/12)
+B52 = sin(10*pi*t/12)
+B62 = sin(12*pi*t/12)
+
+preg = lm(Xt ~ B11+ B21 + B31 + B41 + B51 + B61 + B12+ B22 + B32 + B42 + B52 + B62)
+summary(preg)
+
+```
+There are significant frequencies(at a significance of 0.1) are the following coefficients: $\beta_{11}$ , $\beta_{41}$, $\beta_{12}$, $\beta_{42}$ The intercepts of the most significance are coefficients of frequencies with a period length of one year. Therefore, it takes a year for the time series to repeat itself.
+
+(ii)
+```{r}
+plot.ts(cbind(Xt,preg$fitted.values),plot.type = 'single',
+        col=c('red',1),
+        ylab='Temperature',
+        lwd=c(1.5,1.5)) 
+legend('bottomright',legend = c('Xt','Period cycle model'),
+       col=c('red',1),
+       lty=c(1,1), lwd=c(2,2))
+```
+
+(iii)
+
+```{r}
+par(mfrow=c(1,2))
+plot(Xt-fitted(preg), main="plot of residuals")
+acf(Xt-fitted(preg))
+```
+The model appears to fit the data well because the residuals look white centered around 0. The acf of the residuals also looks like that of a white noise process because the acf of lag not equal to 0 is within the confidence levels, there fore not significant. The acf at lag 0 is 1 as expected in a white noise process.
+
+
+
+
+
+
+

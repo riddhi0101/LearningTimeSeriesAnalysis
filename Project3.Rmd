@@ -1,0 +1,83 @@
+---
+title: "Project 3 - Spectral Analysis of EEG Data"
+author: "Riddhi"
+date: "12/3/2021"
+output:
+  pdf_document: default
+  html_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE)
+knitr::opts_chunk$set(fig.width=6, fig.height=3.5) 
+```
+
+
+```{r, echo=FALSE, results=FALSE, warning=FALSE,message=FALSE}
+library(astsa)
+library(TSA)
+library(dplyr)
+library(kableExtra)
+library(ggplot2)
+
+data(eeg)
+```
+
+
+# Introduction
+
+In this project, we examine an EEG recording of a patient during a seizure for its component frequencies. The EEG data consists of the time series data that is sampled 256 times per second and is a recording of about one minute. In this report, I describe the methods used in the materials and methods section. I propose that the main frequency is $\omega \approx 1/83$ in the results section and explain why this is the main frequency of cyclic activity in the data. I then conduct a 95% confidence interval of this estimate of this frequency. Lastly, the appendix includes all the code used to conduct these analyses.
+
+# Materials and Methods
+
+In order to identify the frequencies that compose of this time series, I examine the weighted and smoothed (using the Daniel kernel) periodogram with a bandwidth of 51 time units. This is done as specified in the statement of the project. Smoothing the periodogram is useful because the estimates raw periodogram do not converge with large sample size. Smoothing allows us to better view the peaks of the periodogram as well as estimate their spectrum. As can be seen below, the raw periodogram is very spikey and hard to distinguish the peak. On the other hand, the smoothed periodogram has an obvious peak at frequency approximately 1/83. I also plotted the periodogram on a smaller x-axis to see this more clearly.
+
+```{r}
+eeg.per=mvspec(eeg)
+
+```
+
+```{r}
+eeg.abgper = mvspec(eeg, kernel("modified.daniell", c(51,51)))
+```
+
+```{r}
+plot(eeg.abgper$freq[1:500], eeg.abgper$spec[1:500], type = 'l', 
+     xlab = 'Frequency', ylab = 'Spectrum')
+```
+
+# Results
+
+The plot above makes it clear that the main estimated frequency in the signal is of $\omega \approx 1/83$. The table below shows where the maximum spectrum occurs. 
+```{r}
+maxInd = which(eeg.abgper$spec == max(eeg.abgper$spec))
+a = eeg.abgper$details[maxInd,]
+a1 = kable(a, caption = "Max Spectrum value")
+kable_styling(a1, full_width=F, latex_options = "hold_position")
+
+```
+The plot below has the confidence intervals for the frequency estimate.
+
+```{r}
+df = ceiling(eeg.abgper$df)
+U = qchisq(.025,df)
+L = qchisq(.975,df)
+lInt = df*eeg.abgper$spec[maxInd]/L  
+uInt = df*eeg.abgper$spec[maxInd]/U 
+
+a = as.data.frame(cbind(eeg.abgper$freq, eeg.abgper$spec))
+names(a) = c("Frequency", "Spectrum")
+
+graph = ggplot(a, aes(Frequency,Spectrum))
+graph + geom_line() + 
+    geom_hline(yintercept = c(uInt,lInt), col = 'blue', linetype='dotted') +
+    geom_vline(xintercept = eeg.abgper$freq[maxInd], col = 'blue', linetype='dashed') + 
+    labs(title = "Smoothed Periodogram with Frequency Estimate and CI")
+
+```
+
+# Appendix 
+```{r ref.label=knitr::all_labels(), echo=TRUE, eval=FALSE}
+```
+
+
