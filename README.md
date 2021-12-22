@@ -5,4 +5,4 @@ Project 1: Linear regression with time series data
 
 Project 2: Fitting an ARMA model using ARIMA
 
-Project 3: Spectral analyses
+Project 3: Spectral analyses of eeg data
